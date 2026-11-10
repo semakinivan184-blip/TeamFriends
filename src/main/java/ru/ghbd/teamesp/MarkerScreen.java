@@ -76,7 +76,7 @@ public final class MarkerScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
+         public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) { renderBackground(context, mouseX, mouseY, deltaTicks); super.render(context, mouseX, mouseY, deltaTicks);
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 15, 0xFFFFFF);
         context.drawTextWithShadow(textRenderer, Text.literal("Твои тимейты:"), width / 2 - 150, 240, 0xFFFFFF);
 
@@ -97,7 +97,7 @@ public final class MarkerScreen extends Screen {
         if (!status.isEmpty()) {
             context.drawCenteredTextWithShadow(textRenderer, Text.literal(status), width / 2, height - 42, 0xFFFF55);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+         
     }
 
     @Override
