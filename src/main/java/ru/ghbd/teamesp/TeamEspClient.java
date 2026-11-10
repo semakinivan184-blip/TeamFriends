@@ -1,4 +1,4 @@
-private static boolean mouseWasDown; private static String outgoingNotice; private static long outgoingNoticeUntil;package ru.ghbd.teamesp;
+package ru.ghbd.teamesp;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -51,7 +51,9 @@ public final class TeamEspClient implements ClientModInitializer {
     private static List<MarkerSnapshot> markerSnapshots = List.of();
     private static final Set<String> friends = new LinkedHashSet<>();
     private static final Deque<String> pendingRequests = new ArrayDeque<>();
-    HudRenderCallback.EVENT.register((context, tickDelta) -> { renderRequestBanner(context); renderOutgoingNotice(context); });
+    private static boolean mouseWasDown;
+    private static String outgoingNotice;
+    private static long outgoingNoticeUntil;
 
     @Override
     public void onInitializeClient() {
@@ -74,7 +76,10 @@ public final class TeamEspClient implements ClientModInitializer {
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register(TeamEspClient::renderMarkers);
-        outgoingNotice = "Заявка отправлена игроку " + cleanName; outgoingNoticeUntil = System.currentTimeMillis() + 5000L; return true;
+        HudRenderCallback.EVENT.register((context, tickDelta) -> {
+            renderRequestBanner(context);
+            renderOutgoingNotice(context);
+        });
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> handleIncomingProtocolMessage(message));
     }
 
@@ -153,7 +158,9 @@ public final class TeamEspClient implements ClientModInitializer {
         client.getNetworkHandler().sendChatCommand(
                 "msg " + cleanName + " " + REQUEST_PREFIX + client.player.getName().getString()
         );
-        private static void renderOutgoingNotice(net.minecraft.client.gui.DrawContext context) { MinecraftClient client = MinecraftClient.getInstance(); if (client.world == null || client.player == null || client.currentScreen != null || outgoingNotice == null || System.currentTimeMillis() > outgoingNoticeUntil) return; int boxWidth = 250; int boxHeight = 36; int boxX = client.getWindow().getScaledWidth() - boxWidth - 8; int boxY = 80; context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xCC202020); context.drawTextWithShadow(client.textRenderer, Text.literal("Заявка отправлена"), boxX + 10, boxY + 8, 0xFFFFFF); context.drawTextWithShadow(client.textRenderer, Text.literal(outgoingNotice), boxX + 10, boxY + 21, 0x7CFF8A); } private static void renderRequestBanner(net.minecraft.client.gui.DrawContext context) {
+        outgoingNotice = "Заявка отправлена игроку " + cleanName;
+        outgoingNoticeUntil = System.currentTimeMillis() + 5000L;
+        return true;
     }
 
     private static void handleIncomingProtocolMessage(Text message) {
@@ -280,6 +287,22 @@ public final class TeamEspClient implements ClientModInitializer {
         context.fill(boxX + 130, boxY + 36, boxX + 240, boxY + 56, 0xFF8B3D3D);
         context.drawCenteredTextWithShadow(client.textRenderer, Text.literal("Принять"), boxX + 65, boxY + 42, 0xFFFFFF);
         context.drawCenteredTextWithShadow(client.textRenderer, Text.literal("Отклонить"), boxX + 185, boxY + 42, 0xFFFFFF);
+    }
+
+    private static void renderOutgoingNotice(net.minecraft.client.gui.DrawContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null || client.player == null || client.currentScreen != null
+                || outgoingNotice == null || System.currentTimeMillis() > outgoingNoticeUntil) {
+            return;
+        }
+
+        int boxWidth = 250;
+        int boxHeight = 36;
+        int boxX = client.getWindow().getScaledWidth() - boxWidth - 8;
+        int boxY = 80;
+        context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xCC202020);
+        context.drawTextWithShadow(client.textRenderer, Text.literal("Заявка отправлена"), boxX + 10, boxY + 8, 0xFFFFFF);
+        context.drawTextWithShadow(client.textRenderer, Text.literal(outgoingNotice), boxX + 10, boxY + 21, 0x7CFF8A);
     }
 
     public static List<String> getFriends() {
