@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "team_esp",
+  "version": "${version}",
+  "name": "Team Markers",
+  "description": "Метки игроков из вашей scoreboard-команды через стены.",
+  "authors": ["GHBD"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "ru.ghbd.teamesp.TeamEspClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.25",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
