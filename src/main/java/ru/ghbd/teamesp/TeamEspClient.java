@@ -1,27 +1,32 @@
 package ru.ghbd.teamesp;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class TeamEspClient implements ClientModInitializer {
     private static final double MAX_DISTANCE_LIMIT = 5000.0D;
@@ -33,11 +38,14 @@ public final class TeamEspClient implements ClientModInitializer {
     private static KeyBinding menuKey;
     private static boolean enabled = true;
     private static double maxDistance = MAX_DISTANCE_LIMIT;
-    private static int ticksUntilMarkerUpdate = 0;
+    private static int ticksUntilMarkerUpdate;
     private static List<MarkerSnapshot> markerSnapshots = List.of();
+    private static final Set<String> friends = new LinkedHashSet<>();
 
     @Override
     public void onInitializeClient() {
+        loadFriends();
+
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.team_esp.menu",
                 InputUtil.Type.KEYSYM,
@@ -47,7 +55,6 @@ public final class TeamEspClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             updateMarkers(client);
-
             while (menuKey.wasPressed() && client.currentScreen == null) {
                 client.setScreen(new MarkerScreen(null));
             }
@@ -73,7 +80,6 @@ public final class TeamEspClient implements ClientModInitializer {
 
         Camera camera = client.gameRenderer.getCamera();
         MatrixStack matrices = context.matrices();
-
         for (MarkerSnapshot marker : markerSnapshots) {
             if (!marker.target().isRemoved()) {
                 renderName(matrices, consumers, client, marker, camera);
@@ -101,17 +107,94 @@ public final class TeamEspClient implements ClientModInitializer {
             }
 
             double distance = Math.sqrt(client.player.squaredDistanceTo(target));
-            Text label = Text.literal("◆ " + target.getName().getString()
-                    + "  " + Math.round(distance) + " м");
-            updatedMarkers.add(new MarkerSnapshot(target, label, distance));
+            Text label = Text.literal("◆ " + target.getName().getString() + " " + Math.round(distance) + " м");
+            updatedMarkers.add(new MarkerSnapshot(target, label));
         }
         markerSnapshots = List.copyOf(updatedMarkers);
     }
 
     private static boolean isVisibleTeammate(PlayerEntity player, PlayerEntity target) {
         return player != target
-                && player.isTeammate(target)
+                && isFriend(target.getName().getString())
                 && player.squaredDistanceTo(target) <= maxDistance * maxDistance;
+    }
+
+    public static List<String> getFriends() {
+        return List.copyOf(friends);
+    }
+
+    public static boolean addFriend(String name) {
+        String cleanName = name == null ? "" : name.trim();
+        if (cleanName.isEmpty() || cleanName.length() > 16 || !cleanName.matches("[A-Za-z0-9_]+")) {
+            return false;
+        }
+        for (String friend : friends) {
+            if (friend.equalsIgnoreCase(cleanName)) {
+                return false;
+            }
+        }
+        friends.add(cleanName);
+        saveFriends();
+        return true;
+    }
+
+    public static boolean removeFriend(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String found = null;
+        for (String friend : friends) {
+            if (friend.equalsIgnoreCase(name.trim())) {
+                found = friend;
+                break;
+            }
+        }
+        if (found == null) {
+            return false;
+        }
+        friends.remove(found);
+        saveFriends();
+        return true;
+    }
+
+    private static boolean isFriend(String name) {
+        for (String friend : friends) {
+            if (friend.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Path friendsFile() {
+        return MinecraftClient.getInstance().runDirectory.toPath()
+                .resolve("config")
+                .resolve("team_esp_friends.txt");
+    }
+
+    private static void loadFriends() {
+        try {
+            Path file = friendsFile();
+            if (Files.exists(file)) {
+                for (String line : Files.readAllLines(file)) {
+                    String cleanName = line.trim();
+                    if (!cleanName.isEmpty() && cleanName.length() <= 16
+                            && cleanName.matches("[A-Za-z0-9_]+")) {
+                        friends.add(cleanName);
+                    }
+                }
+            }
+        } catch (IOException ignored) {
+        }
+    }
+
+    private static void saveFriends() {
+        try {
+            Path file = friendsFile();
+            Files.createDirectories(file.getParent());
+            Files.write(file, friends);
+        } catch (IOException ignored) {
+        }
     }
 
     private static void renderName(MatrixStack matrices,
@@ -151,7 +234,7 @@ public final class TeamEspClient implements ClientModInitializer {
         matrices.pop();
     }
 
-    private record MarkerSnapshot(PlayerEntity target, Text label, double distance) {
+    private record MarkerSnapshot(PlayerEntity target, Text label) {
     }
 
     public static boolean toggleEnabled() {
