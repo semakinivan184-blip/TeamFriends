@@ -42,7 +42,7 @@ public final class TeamEspClient implements ClientModInitializer {
                 "key.team_esp.menu",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
-                "category.team_esp"
+                KeyBinding.Category.create("category.team_esp")
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -72,7 +72,6 @@ public final class TeamEspClient implements ClientModInitializer {
         }
 
         Camera camera = client.gameRenderer.getCamera();
-        Vec3d cameraPos = camera.getPos();
         MatrixStack matrices = context.matrices();
 
         for (MarkerSnapshot marker : markerSnapshots) {
@@ -104,11 +103,7 @@ public final class TeamEspClient implements ClientModInitializer {
             double distance = Math.sqrt(client.player.squaredDistanceTo(target));
             Text label = Text.literal("◆ " + target.getName().getString()
                     + "  " + Math.round(distance) + " м");
-            updatedMarkers.add(new MarkerSnapshot(
-                    target,
-                    label,
-                    distance
-            ));
+            updatedMarkers.add(new MarkerSnapshot(target, label, distance));
         }
         markerSnapshots = List.copyOf(updatedMarkers);
     }
@@ -124,11 +119,11 @@ public final class TeamEspClient implements ClientModInitializer {
                                    MinecraftClient client,
                                    MarkerSnapshot marker,
                                    Camera camera) {
-        Vec3d cameraPos = camera.getPos();
+        Vec3d cameraPos = camera.getCameraPos();
         Text name = marker.label();
         TextRenderer textRenderer = client.textRenderer;
         float scale = 0.025F;
-        Vec3d targetPosition = marker.target().getPos();
+        Vec3d targetPosition = marker.target().getSyncedPos();
 
         matrices.push();
         matrices.translate(
