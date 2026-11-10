@@ -27,12 +27,12 @@ public final class MarkerScreen extends Screen {
         friendNameField.setPlaceholder(Text.literal("Ник игрока"));
         addDrawableChild(friendNameField);
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Добавить"), button -> {
-            if (TeamEspClient.addFriend(friendNameField.getText())) {
-                status = "Игрок добавлен";
+        addDrawableChild(ButtonWidget.builder(Text.literal("Отправить"), button -> {
+            if (TeamEspClient.sendFriendRequest(friendNameField.getText())) {
+                status = "Заявка отправлена";
                 friendNameField.setText("");
             } else {
-                status = "Проверь ник или список";
+                status = "Проверь ник или уже добавлен";
             }
         }).dimensions(centerX + 15, top, 70, 20).build());
 
@@ -64,9 +64,8 @@ public final class MarkerScreen extends Screen {
             distanceButton.setMessage(distanceText());
         }).dimensions(centerX + 3, top + 98, 97, 20).build());
 
-        ButtonWidget updateRate = addDrawableChild(ButtonWidget.builder(Text.literal("Обновление: 2 раза/сек"), button -> {
-        }).dimensions(centerX - 100, top + 126, 200, 20).build());
-        updateRate.active = false;
+        addDrawableChild(ButtonWidget.builder(Text.literal("Обновление: 2 раза/сек"), button -> {
+        }).dimensions(centerX - 100, top + 126, 200, 20).build()).active = false;
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Закрыть"), button -> close())
                 .dimensions(centerX - 100, top + 166, 200, 20)
@@ -79,9 +78,9 @@ public final class MarkerScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         renderBackground(context, mouseX, mouseY, deltaTicks);
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 15, 0xFFFFFF);
-        context.drawTextWithShadow(textRenderer, Text.literal("Твои тимейты:"), width / 2 - 150, 82, 0xFFFFFF);
+        context.drawTextWithShadow(textRenderer, Text.literal("Твои тимейты:"), width / 2 - 150, 240, 0xFFFFFF);
 
-        int y = 96;
+        int y = 254;
         if (TeamEspClient.getFriends().isEmpty()) {
             context.drawTextWithShadow(textRenderer, Text.literal("Список пуст"), width / 2 - 150, y, 0xAAAAAA);
         } else {
