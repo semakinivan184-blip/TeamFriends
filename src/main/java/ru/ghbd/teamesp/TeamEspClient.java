@@ -42,7 +42,7 @@ public final class TeamEspClient implements ClientModInitializer {
                 "key.team_esp.menu",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
-                KeyBinding.Category.create("category.team_esp")
+                KeyBinding.Category.MISC
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
